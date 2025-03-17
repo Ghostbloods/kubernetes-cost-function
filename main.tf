@@ -25,13 +25,44 @@ resource "google_container_node_pool" "primary_nodes" {
   node_count = var.node_count
 
   node_config {
-  disk_size_gb     = 30  # Limit of 400 gb total for free tier
-  machine_type     = var.machine_type
-  preemptible      = true
-  service_account  = "terraform-sa@${var.project_id}.iam.gserviceaccount.com" # Use the service account created earlier
+    disk_size_gb    = 30 # Limit of 400 gb total for free tier
+    machine_type    = var.machine_type
+    preemptible     = true
+    service_account = "terraform-sa@${var.project_id}.iam.gserviceaccount.com" # Use the service account created earlier
 
-  oauth_scopes = [
-    "https://www.googleapis.com/auth/cloud-platform"
-  ]
+    oauth_scopes = [
+      "https://www.googleapis.com/auth/cloud-platform" # Required for Workload Identity
+    ]
+  }
 }
+resource "google_pubsub_topic" "scale_alerts" {
+  name    = "scale-alerts-topic"
+  project = var.project_id
+
+}
+resource "google_pubsub_subscription" "scale_alerts_sub" {
+  name    = "scale-alerts-sub"
+  topic   = google_pubsub_topic.scale_alerts.name
+  project = var.project_id
+
+  ack_deadline_seconds = 20
+
+  push_config {
+    push_endpoint = "https://us-central1-${var.project_id}.cloudfunctions.net/scale-alerts" # This is the URL of the Cloud Function we'll create later
+    oidc_token {
+      service_account_email = "terraform-sa@kubernetes-cost-project.iam.gserviceaccount.com" # Use the service account created earlier
+    }
+  }
+}
+
+resource "google_service_account" "pubsub_sa" {
+  account_id   = "pubsub-sa"
+  display_name = "Pub/Sub Service Account"
+  project      = var.project_id
+}
+
+resource "google_project_iam_member" "pubsub_role" {
+  project = var.project_id
+  role    = "roles/pubsub.subscriber"
+  member  = "serviceAccount:pubsub-sa@kubernetes-cost-project.iam.gserviceaccount.com"
 }

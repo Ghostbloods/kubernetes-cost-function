@@ -152,10 +152,23 @@ kubectl get servicemonitors -n monitoring
 # Create a .yaml file to detect workloads using less than 10% of requested CPU
 I named mine low-utilization-alert.yaml
 
-# Apply alert rul to Prometheus
+# Apply alert rule to Prometheus
 kubectl apply -f low-utilization-alert.yaml -n monitoring
 
 # Adding a Pub/Sub Topic to our Terraform Script. 
 
+### Troubleshooting ###
+Ran into an issue where my user role did not have IAM permissions to add a topic. Gave myself pub/sub.admin role.  
+roles/pubsub.admin
+gcloud projects add-iam-policy-binding Kubernetes-cost-project \
+  --member="serviceAccount:terraform-sa@Kubernetes-cost-project.iam.gserviceaccount.com" \
+  --role="roles/pubsub.admin"
 
- 
+  I also had to grant Terraform the security admin role. 
+  gcloud projects add-iam-policy-binding kubernetes-cost-project \
+  --member="serviceAccount:terraform-sa@kubernetes-cost-project.iam.gserviceaccount.com" \
+  --role="roles/iam.securityAdmin"
+
+  ###              ###
+
+  
