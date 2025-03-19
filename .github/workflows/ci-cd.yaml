@@ -55,8 +55,8 @@ jobs:
             -var="cluster_name=${CLUSTER_NAME}" \
             -var="pub_sub_sa=${PUB_SUB_SA}" \
             -var="scaler_sa=${SCALER_SA}" \
-            -var="terraform_sa=${TERRAFORM_SA}"
-            GCP_CREDENTIALS: ${{ secrets.GCP_CREDENTIALS }}
+            -var="terraform_sa=${TERRAFORM_SA}" \
+            -var="gcp_credentials=${GCP_CREDENTIALS}"
 
       # 6) Terraform Apply (only if on main branch)
       - name: Terraform Apply
@@ -76,5 +76,6 @@ jobs:
             -var="cluster_name=${CLUSTER_NAME}" \
             -var="pub_sub_sa=${PUB_SUB_SA}" \
             -var="scaler_sa=${SCALER_SA}" \
-            -var="terraform_sa=${TERRAFORM_SA}"
-            GCP_CREDENTIALS: ${{ secrets.GCP_CREDENTIALS }}
+            -var="terraform_sa=${TERRAFORM_SA}" \
+            -var="gcp_credentials=${GCP_CREDENTIALS}"
+
