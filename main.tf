@@ -34,7 +34,7 @@ resource "google_container_node_pool" "primary_nodes" {
     disk_size_gb    = 30 # Limit of 400 gb total for free tier
     machine_type    = var.machine_type
     preemptible     = true
-    service_account = "terraform-sa@${var.project_id}.iam.gserviceaccount.com" # Use the service account created earlier
+    service_account = var.terraform_sa # Use the service account created earlier
 
     oauth_scopes = [
       "https://www.googleapis.com/auth/cloud-platform" # Required for Workload Identity
@@ -46,7 +46,7 @@ resource "google_container_node_pool" "primary_nodes" {
 # Pub/Sub: scale-alerts-topic
 ###################################
 resource "google_pubsub_topic" "scale_alerts_topic" {
-  name = "scale-alerts-topic"
+  name    = "scale-alerts-topic"
   project = var.project_id
 }
 
@@ -65,15 +65,15 @@ resource "google_project_iam_binding" "allow_pubsub_push_run_invoker" {
   role    = "roles/run.invoker"
 
   members = [
-    "serviceAccount:${google_service_account.pubsub_push_sa.email}"
+    "serviceAccount:${var.pub_sub_sa}"
   ]
 }
 # -------------------------
 #  Pub/Sub Subscription
 # -------------------------
 resource "google_pubsub_subscription" "scale_alerts_sub" {
-  name  = "scale-alerts-subscription"
-  topic = google_pubsub_topic.scale_alerts_topic.name
+  name    = "scale-alerts-subscription"
+  topic   = google_pubsub_topic.scale_alerts_topic.name
   project = var.project_id
 
   ack_deadline_seconds = 20
@@ -82,7 +82,7 @@ resource "google_pubsub_subscription" "scale_alerts_sub" {
   push_config {
     push_endpoint = "https://scaler-77245052764.us-central1.run.app"
     oidc_token {
-      service_account_email = google_service_account.pubsub_push_sa.email
+      service_account_email = var.pub_sub_sa
     }
   }
   depends_on = [google_cloud_run_service.scaler]
@@ -94,7 +94,7 @@ resource "google_pubsub_subscription" "scale_alerts_sub" {
 resource "google_project_iam_member" "pubsub_role" {
   project = var.project_id
   role    = "roles/pubsub.subscriber"
-  member  = "serviceAccount:pubsub-push-sa@kubernetes-cost-project.iam.gserviceaccount.com"
+  member  = "serviceAccount:${var.pub_sub_sa}"
 }
 #-------------------------
 #  Cloud Run Service
@@ -110,7 +110,7 @@ resource "google_project_iam_binding" "scaler_container_admin" {
   role    = "roles/container.admin"
 
   members = [
-    "serviceAccount:${google_service_account.scaler_sa.email}"
+    "serviceAccount:${var.scaler_sa}"
   ]
 }
 ###################################
@@ -124,7 +124,7 @@ resource "google_cloud_run_service" "alert_forwarder" {
 
   template {
     spec {
-      service_account_name = google_service_account.scaler_sa.email # Use the same service account as the Scaler
+      service_account_name = var.scaler_sa
 
 
       containers {
@@ -138,7 +138,7 @@ resource "google_cloud_run_service" "alert_forwarder" {
           value = google_pubsub_topic.scale_alerts_topic.name
         }
         env {
-          name  = "SHARED_SECRET" # This is a secret that the Scaler will use to verify the Alert Forwarder's signature
+          name  = "SHARED_SECRET"    # This is a secret that the Scaler will use to verify the Alert Forwarder's signature
           value = "MY_SHARED_SECRET" # Change this to a secret value in production
         }
       }
@@ -161,7 +161,7 @@ resource "google_cloud_run_service" "scaler" {
 
   template {
     spec {
-      service_account_name = google_service_account.scaler_sa.email # Use the same service account as the Alert Forwarder
+      service_account_name = var.scaler_sa
 
       containers {
         image = "us-central1-docker.pkg.dev/${var.project_id}/my-repo/scaler:latest"

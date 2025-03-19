@@ -1,0 +1,80 @@
+name: Terraform CI/CD
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
+    steps:
+      # 1) Check out your repo
+      - name: Check out
+        uses: actions/checkout@v3
+
+      # 2) Set up gcloud
+      - name: Setup gcloud
+        uses: google-github-actions/setup-gcloud@v1
+        with:
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+          service_account_key: ${{ secrets.GCP_CREDENTIALS }}
+          export_default_credentials: true
+
+      # 3) Set up Terraform
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v2
+
+      # 4) Terraform Init
+      - name: Terraform Init
+        env:
+          # Pass secrets to environment variables
+          GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+          GCP_REGION:     ${{ secrets.GCP_REGION }}
+          CLUSTER_NAME:   ${{ secrets.CLUSTER_NAME }}
+          PUB_SUB_SA:     ${{ secrets.PUB_SUB_SA }}
+          SCALER_SA:      ${{ secrets.SCALER_SA }}
+          TERRAFORM_SA:   ${{ secrets.TERRAFORM_SA }}
+          GCP_CREDENTIALS: ${{ secrets.GCP_CREDENTIALS }}
+        run: |
+          terraform init
+
+      # 5) Terraform Plan
+      - name: Terraform Plan
+        env:
+          GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+          GCP_REGION:     ${{ secrets.GCP_REGION }}
+          CLUSTER_NAME:   ${{ secrets.CLUSTER_NAME }}
+          PUB_SUB_SA:     ${{ secrets.PUB_SUB_SA }}
+          SCALER_SA:      ${{ secrets.SCALER_SA }}
+          TERRAFORM_SA:   ${{ secrets.TERRAFORM_SA }}
+          GCP_CREDENTIALS: ${{ secrets.GCP_CREDENTIALS }}
+        run: |
+          terraform plan \
+            -var="project_id=${GCP_PROJECT_ID}" \
+            -var="region=${GCP_REGION}" \
+            -var="cluster_name=${CLUSTER_NAME}" \
+            -var="pub_sub_sa=${PUB_SUB_SA}" \
+            -var="scaler_sa=${SCALER_SA}" \
+            -var="terraform_sa=${TERRAFORM_SA}"
+            GCP_CREDENTIALS: ${{ secrets.GCP_CREDENTIALS }}
+
+      # 6) Terraform Apply (only if on main branch)
+      - name: Terraform Apply
+        if: github.ref == 'refs/heads/main'
+        env:
+          GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+          GCP_REGION:     ${{ secrets.GCP_REGION }}
+          CLUSTER_NAME:   ${{ secrets.CLUSTER_NAME }}
+          PUB_SUB_SA:     ${{ secrets.PUB_SUB_SA }}
+          SCALER_SA:      ${{ secrets.SCALER_SA }}
+          TERRAFORM_SA:   ${{ secrets.TERRAFORM_SA }}
+          GCP_CREDENTIALS: ${{ secrets.GCP_CREDENTIALS }}
+        run: |
+          terraform apply -auto-approve \
+            -var="project_id=${GCP_PROJECT_ID}" \
+            -var="region=${GCP_REGION}" \
+            -var="cluster_name=${CLUSTER_NAME}" \
+            -var="pub_sub_sa=${PUB_SUB_SA}" \
+            -var="scaler_sa=${SCALER_SA}" \
+            -var="terraform_sa=${TERRAFORM_SA}"
+            GCP_CREDENTIALS: ${{ secrets.GCP_CREDENTIALS }}
