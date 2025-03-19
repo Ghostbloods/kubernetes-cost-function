@@ -41,8 +41,3 @@ variable "scaler_sa" {
   description = "Scaler service account email"
 }
 
-variable "gcp_credentials" {
-  description = "Path to GCP credentials file"
-  type        = string
-
-}
