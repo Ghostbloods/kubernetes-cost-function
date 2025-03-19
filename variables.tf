@@ -1,18 +1,16 @@
 variable "project_id" {
-  description = "GCP project ID"
+  description = "GCP_PROJECT_ID"
   type        = string
 }
 
 variable "region" {
   description = "GCP region for deployment"
   type        = string
-  default     = "us-central1"
 }
 
 variable "cluster_name" {
   description = "Name of the GKE cluster"
   type        = string
-  default     = "cost-optimizer-cluster"
 }
 
 variable "node_count" {
@@ -25,4 +23,26 @@ variable "machine_type" {
   description = "Machine type for nodes"
   type        = string
   default     = "e2-medium"
+}
+
+variable "pub_sub_sa" {
+  description = "Service account for Pub/Sub"
+  type        = string
+
+}
+
+variable "terraform_sa" {
+  description = "Service account for Terraform"
+  type        = string
+}
+
+variable "scaler_sa" {
+  type        = string
+  description = "Scaler service account email"
+}
+
+variable "gcp_credentials" {
+  description = "Path to GCP credentials file"
+  type        = string
+
 }

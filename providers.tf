@@ -10,7 +10,7 @@ terraform {
 }
 
 provider "google" {
-  credentials = file("terraform-key.json") # This points to our downloaded key
-  project     = "YOUR_PROJECT_ID"
-  region      = "us-central1"
+  credentials = var.gcp_credentials
+  project     = var.project_id
+  region      = var.region
 }

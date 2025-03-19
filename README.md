@@ -171,4 +171,27 @@ gcloud projects add-iam-policy-binding Kubernetes-cost-project \
 
   ###              ###
 
-  
+# Edit Helm values.yaml files
+alertmanager:
+  alertmanagerSpec:
+    config:
+      route:
+        receiver: "cloud-run-publisher"
+        group_wait: 10s
+        group_interval: 30s
+        repeat_interval: 1h
+      receivers:
+        - name: "cloud-run-publisher"
+          webhook_configs:
+            - url: "https://ALERT-FORWARDER-URL/alert?secret=MY_SHARED_SECRET"
+
+# Update Helm chart 
+ helm upgrade --install prometheus-stack prometheus-community/kube-prometheus-stack \
+  --namespace monitoring \
+  -f values.yaml        
+
+# Add the Functions to Terraform and Add the Cloud run url to the pub/sub topic. 
+
+# Create the apps for the alert fowarder and scaler
+
+# Create a docker container and add them to the Artifact Registry
