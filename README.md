@@ -189,3 +189,9 @@ alertmanager:
  helm upgrade --install prometheus-stack prometheus-community/kube-prometheus-stack \
   --namespace monitoring \
   -f values.yaml        
+
+# Add the Functions to Terraform and Add the Cloud run url to the pub/sub topic. 
+
+# Create the apps for the alert fowarder and scaler
+
+# Create a docker container and add them to the Artifact Registry

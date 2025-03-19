@@ -47,6 +47,7 @@ resource "google_container_node_pool" "primary_nodes" {
 ###################################
 resource "google_pubsub_topic" "scale_alerts_topic" {
   name = "scale-alerts-topic"
+  project = var.project_id
 }
 
 # -------------------------
@@ -55,6 +56,7 @@ resource "google_pubsub_topic" "scale_alerts_topic" {
 resource "google_service_account" "pubsub_push_sa" {
   account_id   = "pubsub-push-sa"
   display_name = "Pub/Sub Push Service Account"
+  project      = var.project_id
 }
 
 # Let this service account invoke the Cloud Run Scaler
@@ -72,16 +74,18 @@ resource "google_project_iam_binding" "allow_pubsub_push_run_invoker" {
 resource "google_pubsub_subscription" "scale_alerts_sub" {
   name  = "scale-alerts-subscription"
   topic = google_pubsub_topic.scale_alerts_topic.name
+  project = var.project_id
 
   ack_deadline_seconds = 20
 
   # We'll fill the push_endpoint after we create the Scaler Cloud Run service
   push_config {
-    push_endpoint = "https://SCALER_CLOUD_RUN_URL/"
+    push_endpoint = "https://scaler-77245052764.us-central1.run.app"
     oidc_token {
       service_account_email = google_service_account.pubsub_push_sa.email
     }
   }
+  depends_on = [google_cloud_run_service.scaler]
 }
 # -------------------------
 #  Pub/Sub Role
@@ -90,7 +94,7 @@ resource "google_pubsub_subscription" "scale_alerts_sub" {
 resource "google_project_iam_member" "pubsub_role" {
   project = var.project_id
   role    = "roles/pubsub.subscriber"
-  member  = "serviceAccount:pubsub-sa@kubernetes-cost-project.iam.gserviceaccount.com"
+  member  = "serviceAccount:pubsub-push-sa@kubernetes-cost-project.iam.gserviceaccount.com"
 }
 #-------------------------
 #  Cloud Run Service
@@ -98,6 +102,7 @@ resource "google_project_iam_member" "pubsub_role" {
 resource "google_service_account" "scaler_sa" {
   account_id   = "scaler-sa"
   display_name = "Cloud Run Scaler Service Account"
+  project      = var.project_id
 }
 
 resource "google_project_iam_binding" "scaler_container_admin" {
@@ -133,8 +138,8 @@ resource "google_cloud_run_service" "alert_forwarder" {
           value = google_pubsub_topic.scale_alerts_topic.name
         }
         env {
-          name  = "SHARED_SECRET"
-          value = "MY_SHARED_SECRET"
+          name  = "SHARED_SECRET" # This is a secret that the Scaler will use to verify the Alert Forwarder's signature
+          value = "MY_SHARED_SECRET" # Change this to a secret value in production
         }
       }
     }
