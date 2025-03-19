@@ -12,17 +12,23 @@ jobs:
       - name: Check out
         uses: actions/checkout@v3
 
-      # 2) Set up gcloud
+      # 2) Authenticate to Google Cloud
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v1
+        with:
+          credentials_json: ${{ secrets.GCP_CREDENTIALS }}
+
+         # 3) Install gcloud CLI
       - name: Set up gcloud
         uses: google-github-actions/setup-gcloud@v1
         with:
-          project_id: ${{ secrets.GCP_PROJECT_ID }}
+          project_id: ${{ secrets.GCP_PROJECT_ID }}   
 
-      # 3) Set up Terraform
+      # 4) Set up Terraform
       - name: Set up Terraform
         uses: hashicorp/setup-terraform@v2
 
-      # 4) Terraform Init
+      # 5) Terraform Init
       - name: Terraform Init
         env:
           # Pass secrets to environment variables
@@ -36,7 +42,7 @@ jobs:
         run: |
           terraform init
 
-      # 5) Terraform Plan
+      # 6) Terraform Plan
       - name: Terraform Plan
         env:
           GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
@@ -56,7 +62,7 @@ jobs:
             -var="terraform_sa=${TERRAFORM_SA}" \
             
 
-      # 6) Terraform Apply (only if on main branch)
+      # 7) Terraform Apply (only if on main branch)
       - name: Terraform Apply
         if: github.ref == 'refs/heads/main'
         env:
